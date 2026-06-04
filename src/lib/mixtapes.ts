@@ -9,8 +9,8 @@ import type { MixtapeDraft, MixtapeRecord, MixtapeTrack, PlacedSticker } from "@
 const LOCAL_STORE_PATH = "/private/tmp/mixtape-local-store.json";
 
 function validateTrack(track: MixtapeTrack) {
-  if (!track.id || !track.title || !track.artist || !track.appleUrl) {
-    throw new Error("Each track needs an id, title, artist, and Apple Music link.");
+  if (!track.id || !track.title || !track.artist || !track.spotifyUrl || !track.spotifyUri) {
+    throw new Error("Each track needs an id, title, artist, and Spotify link.");
   }
 }
 

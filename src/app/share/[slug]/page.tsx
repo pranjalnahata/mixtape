@@ -5,6 +5,7 @@ import { MixtapePlayer } from "@/components/mixtape-player";
 import { PageShell } from "@/components/page-shell";
 import { ShareActions } from "@/components/share-actions";
 import { getMixtapeOrThrow } from "@/lib/mixtapes";
+import { stripTrailingSlash } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,13 @@ export default async function SharePage({
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    ? stripTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL)
+    : "";
   const publicUrl =
-    host && !process.env.NEXT_PUBLIC_SITE_URL
+    host && !configuredSiteUrl
       ? `${proto}://${host}/m/${mixtape.slug}`
-      : `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/m/${mixtape.slug}`;
+      : `${configuredSiteUrl}/m/${mixtape.slug}`;
 
   return (
     <PageShell className="max-w-6xl">

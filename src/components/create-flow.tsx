@@ -100,8 +100,6 @@ export function CreateFlow() {
     results: [],
   });
   const deferredQuery = React.useDeferredValue(search.query);
-  const [previewTrackId, setPreviewTrackId] = React.useState<string | null>(null);
-  const previewAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
   React.useEffect(() => {
     if (!isMounted) {
@@ -125,17 +123,6 @@ export function CreateFlow() {
     }
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
   }, [draft, isMounted]);
-
-  React.useEffect(() => {
-    if (!previewAudioRef.current) {
-      previewAudioRef.current = new Audio();
-      previewAudioRef.current.addEventListener("ended", () => setPreviewTrackId(null));
-    }
-
-    return () => {
-      previewAudioRef.current?.pause();
-    };
-  }, []);
 
   React.useEffect(() => {
     if (!deferredQuery.trim()) {
@@ -211,22 +198,6 @@ export function CreateFlow() {
         scale: 1,
       },
     });
-  }
-
-  async function togglePreview(track: MixtapeTrack) {
-    if (!previewAudioRef.current || !track.previewUrl) {
-      return;
-    }
-
-    if (previewTrackId === track.id && !previewAudioRef.current.paused) {
-      previewAudioRef.current.pause();
-      setPreviewTrackId(null);
-      return;
-    }
-
-    previewAudioRef.current.src = track.previewUrl;
-    await previewAudioRef.current.play();
-    setPreviewTrackId(track.id);
   }
 
   async function finishMixtape() {
@@ -352,7 +323,7 @@ export function CreateFlow() {
             <div className="space-y-6">
               <SectionHeading
                 title="Add your songs"
-                copy="Search by title or artist, preview clips, and keep it to four tracks max."
+                copy="Search Spotify by title or artist, then keep it to four tracks max."
               />
               <CasePreview
                 themeKey={draft.themeKey}
@@ -361,9 +332,9 @@ export function CreateFlow() {
                 className="mx-auto w-full max-w-[26rem]"
               />
               <div className="paper-panel rounded-[1.4rem] p-4">
-                <div className="flex items-center justify-between text-sm text-[var(--muted)]">
+                <div className="flex flex-col gap-1 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
                   <span>{draft.tracks.length ? `${draft.tracks.length}/4 songs added` : "No songs yet — up to 4"}</span>
-                  <span>Preview clips via Apple Music/iTunes</span>
+                  <span>Playback on share pages uses Spotify embeds</span>
                 </div>
                 {draft.tracks.length ? (
                   <div className="mt-3 grid gap-3">
@@ -408,6 +379,9 @@ export function CreateFlow() {
                   <p className="mt-4 text-sm text-[var(--muted)]">Searching softly...</p>
                 ) : null}
                 {search.error ? <p className="mt-4 text-sm text-[#8f4b4b]">{search.error}</p> : null}
+                {!search.loading && !search.error && search.query.trim().length >= 2 && !search.results.length ? (
+                  <p className="mt-4 text-sm text-[var(--muted)]">No Spotify tracks found for that search yet.</p>
+                ) : null}
                 <div className="mt-4 max-h-[22rem] space-y-3 overflow-y-auto pr-1 hide-scrollbar">
                   {search.results.map((track) => {
                     const alreadyAdded = draft.tracks.some((item) => item.id === track.id);
@@ -434,27 +408,18 @@ export function CreateFlow() {
                           </p>
                           <p className="truncate text-sm text-[var(--muted)]">{track.artist}</p>
                           <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--muted)]">
-                            <span>{track.previewUrl ? "Preview available" : "Preview unavailable"}</span>
+                            <span>Opens in Spotify</span>
                             <a
-                              href={track.spotifyUrl ?? track.appleUrl}
+                              href={track.spotifyUrl}
                               target="_blank"
                               rel="noreferrer"
                               className="underline decoration-[#9db0c2] underline-offset-4"
                             >
-                              {track.spotifyUrl ? "Open in Spotify" : "Open in Apple Music"}
+                              Open in Spotify
                             </a>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:flex-col sm:justify-center">
-                          <button
-                            type="button"
-                            onClick={() => void togglePreview(track)}
-                            disabled={!track.previewUrl}
-                            className="flex h-11 w-11 items-center justify-center rounded-full bg-black text-white disabled:opacity-35"
-                            aria-label={previewTrackId === track.id ? "Pause preview" : "Play preview"}
-                          >
-                            {previewTrackId === track.id ? "❚❚" : "▶"}
-                          </button>
                           <button
                             type="button"
                             onClick={() => dispatch({ type: "add-track", payload: track })}

@@ -4,8 +4,7 @@ A scrapbook-style Next.js app for creating cute digital mixtapes with:
 
 - a cassette theme picker,
 - draggable sticker placement,
-- Apple Music/iTunes preview-based song search,
-- optional Spotify link enrichment,
+- Spotify-based song search,
 - an owner share page,
 - and a public recipient page.
 
@@ -50,6 +49,7 @@ npm run dev
 4. Open [http://127.0.0.1:3000](http://127.0.0.1:3000)
 
 If Supabase is not configured yet, the app still works locally by saving mixtapes to a temp JSON file at `/private/tmp/mixtape-local-store.json`.
+If Spotify credentials are missing, song search will not work.
 
 ## Environment Variables
 
@@ -126,7 +126,7 @@ Verify all of these on the live site:
 - open `/share/[slug]`
 - open `/m/[slug]`
 - confirm copied links use the real domain
-- confirm Apple preview playback works
+- confirm Spotify embeds load on share and recipient pages
 
 ## Vercel CLI Option
 

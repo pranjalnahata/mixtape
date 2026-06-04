@@ -1,8 +1,5 @@
 import "server-only";
 
-import type { MixtapeTrack } from "@/lib/types";
-import { normalizeText } from "@/lib/utils";
-
 let spotifyTokenCache: { token: string; expiresAt: number } | null = null;
 
 async function getSpotifyAccessToken() {
@@ -44,15 +41,19 @@ async function getSpotifyAccessToken() {
   return payload.access_token;
 }
 
-async function enrichWithSpotify(track: MixtapeTrack) {
-  const accessToken = await getSpotifyAccessToken();
-  if (!accessToken) {
-    return track;
+export async function searchMusic(query: string) {
+  const trimmedQuery = query.trim();
+  if (trimmedQuery.length < 2) {
+    return [];
   }
 
-  const query = encodeURIComponent(`track:${track.title} artist:${track.artist}`);
+  const accessToken = await getSpotifyAccessToken();
+  if (!accessToken) {
+    throw new Error("Spotify credentials are missing or invalid.");
+  }
+
   const response = await fetch(
-    `https://api.spotify.com/v1/search?type=track&limit=1&market=US&q=${query}`,
+    `https://api.spotify.com/v1/search?type=track&limit=8&market=US&q=${encodeURIComponent(trimmedQuery)}`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
@@ -60,87 +61,35 @@ async function enrichWithSpotify(track: MixtapeTrack) {
   );
 
   if (!response.ok) {
-    return track;
+    throw new Error("Spotify search is unavailable right now.");
   }
 
   const payload = (await response.json()) as {
     tracks?: {
       items?: Array<{
-        uri: string;
-        external_urls?: { spotify?: string };
+        id: string;
         name: string;
+        uri: string;
+        duration_ms?: number;
         artists: Array<{ name: string }>;
+        album?: {
+          images?: Array<{ url: string }>;
+        };
+        external_urls?: { spotify?: string };
       }>;
     };
   };
 
-  const candidate = payload.tracks?.items?.[0];
-  if (!candidate) {
-    return track;
-  }
-
-  const sameTitle =
-    normalizeText(candidate.name) === normalizeText(track.title) ||
-    normalizeText(candidate.name).includes(normalizeText(track.title)) ||
-    normalizeText(track.title).includes(normalizeText(candidate.name));
-  const sameArtist = candidate.artists.some((artist) =>
-    normalizeText(artist.name).includes(normalizeText(track.artist))
-  );
-
-  if (!sameTitle || !sameArtist) {
-    return track;
-  }
-
-  return {
-    ...track,
-    spotifyUrl: candidate.external_urls?.spotify ?? null,
-    spotifyUri: candidate.uri,
-  };
-}
-
-export async function searchMusic(query: string) {
-  const trimmedQuery = query.trim();
-  if (trimmedQuery.length < 2) {
-    return [];
-  }
-
-  const response = await fetch(
-    `https://itunes.apple.com/search?entity=song&country=US&limit=8&term=${encodeURIComponent(trimmedQuery)}`,
-    {
-      cache: "no-store",
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Apple Music search is unavailable right now.");
-  }
-
-  const payload = (await response.json()) as {
-    results: Array<{
-      trackId: number;
-      trackName: string;
-      artistName: string;
-      artworkUrl100?: string;
-      trackTimeMillis?: number;
-      previewUrl?: string;
-      trackViewUrl?: string;
-    }>;
-  };
-
-  const baseTracks = payload.results
-    .filter((item) => item.trackId && item.trackName && item.artistName && item.trackViewUrl)
+  return (payload.tracks?.items ?? [])
+    .filter((item) => item.id && item.name && item.artists?.length && item.uri && item.external_urls?.spotify)
     .map((item) => ({
-      id: `apple-${item.trackId}`,
-      title: item.trackName,
-      artist: item.artistName,
-      artworkUrl: item.artworkUrl100?.replace("100x100", "300x300") ?? null,
-      durationMs: item.previewUrl ? 30_000 : (item.trackTimeMillis ?? null),
-      previewUrl: item.previewUrl ?? null,
-      appleUrl: item.trackViewUrl ?? "https://music.apple.com",
-      spotifyUrl: null,
-      spotifyUri: null,
-      source: "apple" as const,
+      id: `spotify-${item.id}`,
+      title: item.name,
+      artist: item.artists.map((artist) => artist.name).join(", "),
+      artworkUrl: item.album?.images?.[0]?.url ?? null,
+      durationMs: item.duration_ms ?? null,
+      spotifyUrl: item.external_urls?.spotify ?? "https://open.spotify.com",
+      spotifyUri: item.uri,
+      source: "spotify" as const,
     }));
-
-  return Promise.all(baseTracks.map((track) => enrichWithSpotify(track)));
 }

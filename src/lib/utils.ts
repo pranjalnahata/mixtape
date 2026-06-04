@@ -25,3 +25,7 @@ export function normalizeText(value: string) {
 export function makeId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+export function stripTrailingSlash(value: string) {
+  return value.replace(/\/+$/, "");
+}

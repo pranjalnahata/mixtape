@@ -19,7 +19,7 @@ export default function Home() {
                 Build a mixtape they can open like a love note.
               </h1>
               <p className="mt-5 max-w-lg text-base leading-8 text-[var(--muted)] sm:text-lg">
-                Pick a cassette, add sweet little stickers, search songs with preview clips,
+                Pick a cassette, add sweet little stickers, search Spotify for songs,
                 and share one link that feels like passing someone a hand-decorated tape.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -49,24 +49,20 @@ export default function Home() {
                   title: "Lover Girl",
                   artist: "Laufey",
                   artworkUrl: null,
-                  durationMs: 30000,
-                  previewUrl: null,
-                  appleUrl: "https://music.apple.com",
-                  spotifyUrl: null,
-                  spotifyUri: null,
-                  source: "apple",
+                  durationMs: 164000,
+                  spotifyUrl: "https://open.spotify.com/track/6dOtVTDdiauQNBQEDOtlAB",
+                  spotifyUri: "spotify:track:6dOtVTDdiauQNBQEDOtlAB",
+                  source: "spotify",
                 },
                 {
                   id: "landing-2",
                   title: "Moon Song",
                   artist: "Phoebe Bridgers",
                   artworkUrl: null,
-                  durationMs: 30000,
-                  previewUrl: null,
-                  appleUrl: "https://music.apple.com",
-                  spotifyUrl: null,
-                  spotifyUri: null,
-                  source: "apple",
+                  durationMs: 277000,
+                  spotifyUrl: "https://open.spotify.com/track/3lNGWCAeGj2vY4JvPDg0IY",
+                  spotifyUri: "spotify:track:3lNGWCAeGj2vY4JvPDg0IY",
+                  source: "spotify",
                 },
               ]}
               stickers={[
@@ -92,7 +88,7 @@ export default function Home() {
             {
               number: "02",
               title: "Add a few songs",
-              copy: "Search tracks, hear 30-second previews, and stack up to four songs in a tiny queue.",
+              copy: "Search Spotify tracks, stack up to four songs, and let the shared page play them in Spotify.",
             },
             {
               number: "03",

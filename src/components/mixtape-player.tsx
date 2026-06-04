@@ -5,6 +5,16 @@ import Image from "next/image";
 import type { MixtapeTrack } from "@/lib/types";
 import { cn, formatDuration } from "@/lib/utils";
 
+function spotifyTrackIdFromUri(uri: string) {
+  const [, , trackId] = uri.split(":");
+  return trackId;
+}
+
+function spotifyEmbedUrl(uri: string) {
+  const trackId = spotifyTrackIdFromUri(uri);
+  return `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+}
+
 export function MixtapePlayer({
   tracks,
   className,
@@ -13,80 +23,12 @@ export function MixtapePlayer({
   className?: string;
 }) {
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [currentTime, setCurrentTime] = React.useState(0);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const activeTrack = tracks[currentIndex];
-
-  const attachPreview = React.useEffectEvent(() => {
-    if (!audioRef.current || !activeTrack?.previewUrl) {
-      return;
-    }
-
-    if (audioRef.current.src !== activeTrack.previewUrl) {
-      audioRef.current.src = activeTrack.previewUrl;
-      setCurrentTime(0);
-    }
-  });
-
-  const playCurrent = React.useEffectEvent(async () => {
-    if (!audioRef.current || !activeTrack?.previewUrl) {
-      return;
-    }
-
-    attachPreview();
-    await audioRef.current.play();
-    setIsPlaying(true);
-  });
-
-  React.useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.preload = "none";
-    }
-
-    const audio = audioRef.current;
-
-    const handleTime = () => setCurrentTime(audio.currentTime);
-    const handlePause = () => setIsPlaying(false);
-    const handlePlay = () => setIsPlaying(true);
-    const handleEnded = () => {
-      if (currentIndex < tracks.length - 1) {
-        setCurrentIndex((index) => index + 1);
-        return;
-      }
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-
-    audio.addEventListener("timeupdate", handleTime);
-    audio.addEventListener("pause", handlePause);
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.pause();
-      audio.removeEventListener("timeupdate", handleTime);
-      audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [currentIndex, tracks.length]);
-
-  React.useEffect(() => {
-    attachPreview();
-    if (isPlaying) {
-      void playCurrent();
-    }
-  }, [activeTrack?.previewUrl, isPlaying]);
 
   if (!tracks.length) {
     return null;
   }
 
-  const progress = activeTrack?.durationMs
-    ? Math.min((currentTime / (activeTrack.durationMs / 1000)) * 100, 100)
-    : 0;
+  const activeTrack = tracks[currentIndex];
 
   return (
     <section className={cn("paper-panel rounded-[1.8rem] p-4 shadow-frame sm:p-5", className)}>
@@ -114,74 +56,80 @@ export function MixtapePlayer({
           <p className="truncate text-base text-[var(--muted)]">{activeTrack.artist}</p>
         </div>
         <a
-          href={activeTrack.spotifyUrl ?? activeTrack.appleUrl}
+          href={activeTrack.spotifyUrl}
           target="_blank"
           rel="noreferrer"
           className="text-sm font-medium text-[#5f7487] underline decoration-[#90a7be] underline-offset-4"
         >
-          {activeTrack.spotifyUrl ? "Spotify" : "Apple Music"}
+          Spotify
         </a>
       </div>
-      <div className="mt-5 flex items-center gap-4 text-[var(--muted)]">
-        <span className="w-11 text-sm tabular-nums">{formatDuration(currentTime * 1000)}</span>
+
+      <div className="mt-5 flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => {
-            setCurrentIndex((index) => Math.max(0, index - 1));
-            setCurrentTime(0);
-          }}
+          onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
           disabled={currentIndex === 0}
-          className="rounded-full p-2 text-xl disabled:cursor-not-allowed disabled:opacity-35"
+          className="button-secondary rounded-full border border-black/15 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-35"
           aria-label="Previous track"
         >
-          ‹
+          Previous
         </button>
+        <div className="text-center">
+          <p className="text-sm font-medium text-[var(--muted)]">
+            Track {currentIndex + 1} of {tracks.length}
+          </p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {formatDuration(activeTrack.durationMs)}
+          </p>
+        </div>
         <button
           type="button"
-          onClick={async () => {
-            if (!activeTrack.previewUrl) {
-              return;
-            }
-
-            if (isPlaying) {
-              audioRef.current?.pause();
-              return;
-            }
-
-            await playCurrent();
-          }}
-          disabled={!activeTrack.previewUrl}
-          className="button-primary flex h-14 w-14 items-center justify-center rounded-full border border-black/60 text-xl disabled:cursor-not-allowed disabled:opacity-45"
-          aria-label={isPlaying ? "Pause preview" : "Play preview"}
-        >
-          {isPlaying ? "❚❚" : "▶"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setCurrentIndex((index) => Math.min(tracks.length - 1, index + 1));
-            setCurrentTime(0);
-          }}
+          onClick={() => setCurrentIndex((index) => Math.min(tracks.length - 1, index + 1))}
           disabled={currentIndex === tracks.length - 1}
-          className="rounded-full p-2 text-xl disabled:cursor-not-allowed disabled:opacity-35"
+          className="button-secondary rounded-full border border-black/15 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-35"
           aria-label="Next track"
         >
-          ›
+          Next
         </button>
-        <span className="w-11 text-right text-sm tabular-nums">
-          {formatDuration(activeTrack.durationMs)}
-        </span>
       </div>
-      <div className="mt-4 h-2 rounded-full bg-[#dfe8f1]">
-        <div
-          className="h-full rounded-full bg-[#7b96ad] transition-[width]"
-          style={{ width: `${progress}%` }}
+
+      <div className="mt-5 overflow-hidden rounded-[1.4rem] border border-white/60 bg-white/65 shadow-inner">
+        <iframe
+          key={activeTrack.spotifyUri}
+          title={`Spotify player for ${activeTrack.title}`}
+          src={spotifyEmbedUrl(activeTrack.spotifyUri)}
+          width="100%"
+          height="152"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          className="block w-full"
         />
       </div>
+
+      {tracks.length > 1 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {tracks.map((track, index) => (
+            <button
+              key={track.id}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
+              className={cn(
+                "rounded-full px-3 py-2 text-sm font-medium transition",
+                index === currentIndex
+                  ? "bg-[var(--accent)] text-white"
+                  : "button-soft text-[var(--foreground)]"
+              )}
+            >
+              {track.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-        {activeTrack.previewUrl
-          ? "30-second preview provided via Apple Music/iTunes."
-          : "Preview unavailable for this track. You can still open it in Spotify or Apple Music."}
+        Playback is handled with Spotify&apos;s embedded player. If the listener is not signed into
+        Spotify or their account has playback limits, Spotify may restrict what can play.
       </p>
     </section>
   );

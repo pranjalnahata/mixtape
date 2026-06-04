@@ -1,6 +1,6 @@
 export type StickerZone = "tape" | "case";
 
-export type MixtapeTrackSource = "apple";
+export type MixtapeTrackSource = "spotify";
 
 export interface MixtapeTrack {
   id: string;
@@ -8,10 +8,8 @@ export interface MixtapeTrack {
   artist: string;
   artworkUrl: string | null;
   durationMs: number | null;
-  previewUrl: string | null;
-  appleUrl: string;
-  spotifyUrl: string | null;
-  spotifyUri: string | null;
+  spotifyUrl: string;
+  spotifyUri: string;
   source: MixtapeTrackSource;
 }
 
